@@ -1,0 +1,12 @@
+notebooks/*
+sources/*
+*.ipynb_checkpoints*
+numerics*
+*.DS_Store
+*.synctex.gz
+*.log
+*.aux
+*.bib
+*.h5
+*.m
+
