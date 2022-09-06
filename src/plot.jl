@@ -5,19 +5,23 @@ function create_map(
     filename::String,
     scenario::Dict{String, DataFrame};
     shape::Vector{Matrix{Float64}} = Matrix{Float64}[],
+    sizes = (1000,800,30),
+    node_radius = 3,
 )
-    coord = mercator([scenario["bus"].longitude scenario["bus"].latitude])
+    coord = PanTaGruEl.mercator([scenario["bus"].longitude scenario["bus"].latitude])
     s = Matrix{Float64}[]
     for i=1:length(shape)
-        push!(s, mercator(shape[i]))
+        push!(s, PanTaGruEl.mercator(shape[i]))
     end
     e1 = scenario["line"].bus_id1 .|> b -> findfirst(scenario["bus"].id .== b) 
     e2 = scenario["line"].bus_id2 .|> b -> findfirst(scenario["bus"].id .== b)
     ec = repeat(["#000000"], size(scenario["line"], 1), 1)
+    ec[scenario["line"].voltage .== 132] .= "#000000"
     ec[scenario["line"].voltage .== 220] .= "#00751a"
     ec[scenario["line"].voltage .== 380] .= "#ff0000"
     ew = copy(scenario["line"].circuit)
-    svg_graph(filename, coord, [e1 e2], shape = s, edge_color = ec, edge_width = ew)
+    PanTaGruEl.svg_graph(filename, coord, [e1 e2],
+        shape = s, edge_color = ec, edge_width = ew, sizes = sizes, node_radius = [node_radius])
 end
 
 

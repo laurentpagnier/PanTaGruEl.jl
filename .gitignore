@@ -9,4 +9,5 @@ numerics*
 *.bib
 *.h5
 *.m
-
+*.csv
+*.svg
