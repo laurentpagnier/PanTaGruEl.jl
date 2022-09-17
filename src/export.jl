@@ -83,6 +83,50 @@ function export_matpower(
     end
     write(fid, "];\n\n")
     
+    write(fid, "mpc.bus_coord = [\n")
+    for i=1:size(scenario["bus"], 1)
+        lat = scenario["bus"].latitude[i]
+        lon = scenario["bus"].longitude[i]
+        write(fid, "\t$lon\t$lat;\n")
+    end
+    write(fid, "];\n\n")
+    
+    write(fid, "mpc.bus_name = [\n")
+    for i=1:size(scenario["bus"], 1)
+        n = scenario["bus"].name[i]
+        write(fid, "\t\"$n\";\n")
+    end
+    write(fid, "];\n\n")
+    
+    write(fid, "mpc.gen_type = [\n")
+    for i=1:size(scenario["gen"], 1)
+        t = scenario["gen"].type[i]
+        write(fid, "\t\"$t\";\n")
+    end
+    write(fid, "];\n\n")
+    
+    write(fid, "mpc.gen_inertia = [\n")
+    for i=1:size(scenario["gen"], 1)
+        m = scenario["gen"].inertia[i] / Sb
+        write(fid, "\t$m;\n")
+    end
+    write(fid, "];\n\n")
+    
+    write(fid, "mpc.gen_prim_ctrl = [\n")
+    for i=1:size(scenario["gen"], 1)
+        d = scenario["gen"].damping[i] / Sb
+        write(fid, "\t$d;\n")
+    end
+    write(fid, "];\n\n")
+    
+    write(fid, "mpc.load_freq_coef = [\n")
+    for i=1:size(scenario["demand"], 1)
+        d = scenario["demand"][i, "freq coeff"] / Sb
+        write(fid, "\t$d;\n")
+    end
+    write(fid, "];\n\n")
+    
+    
     close(fid)
 end
 

@@ -135,18 +135,22 @@ function set_gen_inertia!(
 end
 
 
-function set_gen_damping!(gen; Vs = 1, X = 0, Xdp = 0.39,
+function set_gen_damping!(
+    scenario::Dict{String, DataFrame};
+    Vs = 1, X = 0, Xdp = 0.39,
     Xdpp = 0.28, Xqp = 0.52, Xqpp = 0.32, Tdpp = 0.028,
-    Tqpp = 0.058, delta = 0/180*pi)
-    damping = zeros(length(gen["id"])); 
+    Tqpp = 0.058, delta = 0/180*pi,
+)
+    damping = zeros(size(scenario["gen"],1))
     # damping bialek p.174 and table p. 139
-    for i=1:length(gen["id"])
-        if !(gen["id"][i] in ["WD", "SO", "PV", "XX"])
+    for i=1:size(scenario["gen"],1)
+        if !(scenario["gen"].type[i] in ["WD", "SO", "PV", "XX"])
             damping[i] = Vs^2 * ((Xdp-Xdpp)^2/(X + Xdp) * Xdp/Xdpp*Tdpp*sin(delta)^2
-                + (Xqp - Xqpp)^2/(X + Xqp) * Xqp/Xqpp*Tqpp*cos(delta)^2) * gen["power"][i]
+                + (Xqp - Xqpp)^2/(X + Xqp) * Xqp/Xqpp*Tqpp*cos(delta)^2) *
+                scenario["gen"].capacity[i]
         end
     end
-    gen["damping"] = damping
+    scenario["gen"][:,"damping"] = damping
     nothing
 end
 

@@ -54,7 +54,7 @@ function create_PSdata(scenario; sb = 100)
     min_on_time = Int64.(zeros(Ngen))
     min_down_time = Int64.(zeros(Ngen))
 
-    return is_line, PSdata(gen_loc, wind_loc, min_gen, max_gen, line_id, line_susceptance,
+    return is_line, PSOP.PSdata(gen_loc, wind_loc, min_gen, max_gen, line_id, line_susceptance,
         line_limit, demand, wind, ramping_rate, lin_cost, quad_cost,
         on_cost, startup_cost, shutdown_cost, min_on_time, min_down_time,
         Nbus, Nline, Ngen, Nwind, Nt, sb)

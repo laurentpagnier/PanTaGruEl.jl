@@ -1,4 +1,4 @@
-export assign_demand!, national_demand
+export assign_demand!, national_demand, assign_demand_freq_coeff!
 
 function assign_demand!(
     scenario,
@@ -17,6 +17,18 @@ function assign_demand!(
     end
     
     scenario["demand"] = DataFrame(active = active, reactive = reactive)
+    nothing
+end
+
+
+function assign_demand_freq_coeff!(
+    scenario;
+    min_value = 0.01,
+    alpha = 1.5,
+    freq = 50.0,
+)
+    scenario["demand"][:,"freq coeff"] = alpha / (2 *pi * freq) *
+        scenario["demand"][:,"active"]
     nothing
 end
 
