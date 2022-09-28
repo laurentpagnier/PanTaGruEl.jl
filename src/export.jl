@@ -284,9 +284,8 @@ function export_pandapower(filename, scenario)
         n = scenario["line"].circuit[i]
         r = scenario["line"].r[i]
         x = scenario["line"].x[i]
-        i = scenario["line"].fmax[i] / scenario["line"].voltage[i] / sqrt(3) 
-        write(fid, "[0.0,1.0,$id1,0.0,true,1.0,42.339019740572553,100.0,null,$n,$r,null,$id2,\\\"ol\\\",$x]")
-        #write(fid, "[$(i-1),true,true,null,0.0,1.0,null,null,1.0,false,$pg,0.0,24.0,-6.0,0.0]")
+        imax = scenario["line"].fmax[i] / scenario["line"].voltage[i] / sqrt(3) 
+        write(fid, "[0.0,1.0,$id1,0.0,true,1.0,$imax,100.0,null,$n,$r,null,$id2,\\\"ol\\\",$x]")
         i < Nline ? write(fid, ",") : nothing
     end
     write(fid, "]}\",\n")
