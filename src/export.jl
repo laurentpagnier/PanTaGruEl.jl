@@ -165,10 +165,12 @@ function export_pandapower(filename, scenario)
     Ngen = size(scenario["gen"], 1)
     Nline = size(scenario["line"], 1)
     Ntrans = size(scenario["trans"], 1)
-
+    sn_mva = 100.0
+    
     write(fid, "{\n\"_module\": \"pandapower.auxiliary\",\n\"_class\": \"pandapowerNet\",\n")
-    write(fid, "\"_object\": {\n\t\"bus\": {\n\t\t\"_module\": \"pandas.core.frame\",\n")
+    write(fid, "\"_object\": {\n\t\"sn_mva\": $sn_mva,\n\t\"bus\": {\n\t\t\"_module\": \"pandas.core.frame\",\n")
     write(fid, "\t\t\"_class\": \"DataFrame\",\n\t\t\"_object\": \"{\\\"columns\\\":[")
+    
     for i=1:size(bus_field,1)
         write(fid, "\\\"$(bus_field[i][1])\\\"")
         i < size(bus_field,1) ? write(fid, ",") : nothing
@@ -245,8 +247,11 @@ function export_pandapower(filename, scenario)
     end
     write(fid, "],\\\"data\\\":[")
     for i = 1:size(scenario["gen"], 1)
+        id = scenario["gen"].bus_id[i] |>
+            id -> findfirst(scenario["bus"].id .== id) - 1
         pg = scenario["gen"].capacity[i]
-        write(fid, "[$(i-1),true,true,null,0.0,1.0,null,null,1.0,false,$pg,0.0,24.0,-6.0,0.0]")
+        qlim = min(0.5 * scenario["gen"].capacity[i], 1000)
+        write(fid, "[$id,true,true,null,0.0,1.0,$sn_mva,null,1.0,false,$pg,0.0,$qlim,$(-qlim),0.0]")
         i < Ngen ? write(fid, ",") : nothing
     end
     write(fid, "]}\",\n")
@@ -271,12 +276,19 @@ function export_pandapower(filename, scenario)
         i < size(line_field,1) ? write(fid, ",") : nothing
     end
     write(fid, "],\\\"index\\\":[")
+    temp = 0
     for i = 1:size(scenario["line"], 1)
-        write(fid, "$(i-1)")
+        n = scenario["line"].circuit[i]
+        for j = 1:n
+            write(fid, "$temp")
+            j < n ? write(fid, ",") : nothing
+            temp += 1
+        end
         i < Nline ? write(fid, ",") : nothing
     end
     write(fid, "],\\\"data\\\":[")
     for i = 1:size(scenario["line"], 1)
+        
         id1 = scenario["line"].bus_id1[i] |>
             id -> findfirst(scenario["bus"].id .== id) - 1
         id2 = scenario["line"].bus_id2[i] |>
@@ -285,7 +297,10 @@ function export_pandapower(filename, scenario)
         r = scenario["line"].r[i]
         x = scenario["line"].x[i]
         imax = scenario["line"].fmax[i] / scenario["line"].voltage[i] / sqrt(3) 
-        write(fid, "[0.0,1.0,$id1,0.0,true,1.0,$imax,100.0,null,$n,$r,null,$id2,\\\"ol\\\",$x]")
+        for j = 1:n
+            write(fid, "[0.0,1.0,$id1,0.0,true,1.0,$imax,100.0,null,1,$r,null,$id2,\\\"ol\\\",$x]")
+            j < n ? write(fid, ",") : nothing
+        end
         i < Nline ? write(fid, ",") : nothing
     end
     write(fid, "]}\",\n")
@@ -331,8 +346,9 @@ function export_pandapower(filename, scenario)
             id -> findfirst(scenario["bus"].id .== id) - 1
         fmax = scenario["trans"].fmax[i]
         hv_id, lv_id, hv_v, lv_v = v1 > v2 ? (id1, id2, v1, v2) : (id2, id1, v2, v1)
+        vk_percent = x / (hv_v^2 / sn_mva) * fmax
         write(fid, "[1.0,$hv_id,0.0,true,$lv_id,100.0,null,1,0.0,0.0,$fmax,null,null,")
-        write(fid, "null,null,false,null,null,null,null,$hv_v,$lv_v,1089.098999999999933,0.0]")
+        write(fid, "null,null,false,null,null,null,null,$hv_v,$lv_v,$vk_percent,0.0]")
         i < Ntrans ? write(fid, ",") : nothing
     end
     write(fid, "]}\",\n")
