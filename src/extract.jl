@@ -63,7 +63,7 @@ function extract_grid_from_polygon(
 )
     coord = [scenario["bus"].longitude scenario["bus"].latitude]
     id0 = findall(in_polygon(coord, poly[:,2:-1:1]))
-    s = discard_non_selected_bus(scenario, id0)
+    s = discard_non_selected_bus(scenario, id0, add_neighbour=add_neighbour)
     return extract_connected_grid(s, start)
 end
 
@@ -75,7 +75,7 @@ function extract_grid_from_country(
     add_neighbour::Bool = true,
 )
     id0 = findall(scenario["bus"].country .|> c -> c in country)
-    s = discard_non_selected_bus(scenario, id0)
+    s = discard_non_selected_bus(scenario, id0, add_neighbour=add_neighbour)
     return extract_connected_grid(s, start)
 end
 
@@ -85,24 +85,27 @@ function discard_non_selected_bus(
     id0;
     add_neighbour::Bool = true,
 )
-    # add outside neighbours
-    edge = [
-        scenario["line"].bus_id1 scenario["line"].bus_id2;
-        scenario["trans"].bus_id1 scenario["trans"].bus_id2
-        ]
-    temp = id0 .|> id -> scenario["bus"].id[id] .|>
-        id -> [id; edge[edge[:,1] .== id,2]; edge[edge[:,2] .== id,1]] .|>
-        id -> findfirst(scenario["bus"].id .== id)
-    id = Int64[]
-    for i = 1:length(temp)
-        append!(id, temp[i])
-    end
-    
     s = copy_scenario(scenario)
-    
-    # set neighbours' country to XX, this prevents demand to be distributed
-    # to these buses
-    setdiff(id, id0) |> id_neigh -> s["bus"].country[id_neigh] .= "XX"
+    # add outside neighbours
+    if add_neighbour
+        edge = [
+            scenario["line"].bus_id1 scenario["line"].bus_id2;
+            scenario["trans"].bus_id1 scenario["trans"].bus_id2
+            ]
+        temp = id0 .|> id -> scenario["bus"].id[id] .|>
+            id -> [id; edge[edge[:,1] .== id,2]; edge[edge[:,2] .== id,1]] .|>
+            id -> findfirst(scenario["bus"].id .== id)
+        id = Int64[]
+        for i = 1:length(temp)
+            append!(id, temp[i])
+        end
+        
+        # set neighbours' country to XX, this prevents demand to be distributed
+        # to these buses
+        setdiff(id, id0) |> id_neigh -> s["bus"].country[id_neigh] .= "XX"
+    else
+        id = id0
+    end
     delete!(s["bus"], Not(id))
     return s
 end
