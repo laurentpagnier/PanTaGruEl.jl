@@ -1,7 +1,7 @@
-export assign_demand!, national_demand, assign_demand_freq_coeff!
+export assign_active_demand!, national_demand, assign_demand_freq_coeff!
 
-function assign_demand!(
-    scenario,
+function assign_active_demand!(
+    scenario::Dict{String, DataFrame},
     national_demand = national_demand()
 )
     active = zeros(size(scenario["bus"],1))
@@ -21,8 +21,19 @@ function assign_demand!(
 end
 
 
+function update_active_load!(
+    scenario::Dict{String, DataFrame},
+    source_folder::String,
+    date::String,
+    )
+    nd = retreave_entsoe_national_demand(source_folder, date)
+    assign_active_demand!(scenario, nd)
+    Nothing
+end
+
+
 function assign_demand_freq_coeff!(
-    scenario;
+    scenario::Dict{String, DataFrame};
     min_value = 0.01,
     alpha = 1.5,
     freq = 50.0,
@@ -67,7 +78,7 @@ function national_demand(
             "IT" => 43573.0, "JO" => 0.0, "KZ" => 0.0, "LB" => 0.0,
             "LT" => 1666.33, "LU" => 0.0, "LV" => 975.0, "LY" => 0.0,
             "MA" => 0.0, "MD" => 857.0, "ME" => 498.24, "MK" => 0.0, "MT" => 0.0,
-            "NL" => 15792.68, "NO" => 22651.949999999997, "PA" => 0.0,
+            "NL" => 15792.68, "NO" => 22651.95, "PA" => 0.0,
             "PL" => 24449.94, "PT" => 7741.1, "RO" => 8528.0, "RS" => 4981.0,
             "RU" => 0.0, "SA" => 0.0, "SE" => 29216.52, "SI" => 1989.96,
             "SK" => 3953.0, "SY" => 0.0, "TN" => 0.0, "TR" => 0.0,

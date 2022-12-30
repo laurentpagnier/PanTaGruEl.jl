@@ -132,7 +132,7 @@ function reinforce_network!(
     # Here we assume that the system should be able
     # strong enough to run a DC-OPF with record demands
     stressed_scenario = copy_scenario(scenario)
-    assign_demand!(stressed_scenario, national_demand("record_peak"))
+    assign_active_demand!(stressed_scenario, national_demand("record_peak"))
     is_line, ps0 = create_PSdata(stressed_scenario) # initial system
     ps_ref = PSOP.copy_psdata(ps0) # reference (varying) system
 

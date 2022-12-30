@@ -4,7 +4,8 @@ function download_entsoe_data(source_folder)
         Please,
         1) create an account on at https://transparency.entsoe.eu
         2) sftp <email address you used>@sftp-transparency.entsoe.eu
-        3) download *** and place it in $source_folder/enstoe/
+        3) download /TP_export/ActualTotalLoad_6.1.A/yyyy_mm_ActualTotalLoad_6.1.A.csv
+        (where yyyy is the year and mm is the month) and place it in $source_folder/enstoe/
         """)
 end
 
@@ -23,7 +24,7 @@ function retreave_entsoe_national_demand(
         "IE", "NI", "XX"];
     demand = country .|> c -> sum(subset(data,
             :DateTime => d -> d .== date * ".000",
-            :AreaTypeCode => c -> c .== "BZN",
+            :AreaTypeCode => c -> c .== "CTY",
             :AreaName => n -> contains.(n,c)).TotalLoadValue)
     return Dict(zip(country,demand) .|> d-> d[1] => d[2])
 end
