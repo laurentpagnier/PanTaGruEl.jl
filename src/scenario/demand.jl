@@ -1,4 +1,5 @@
-export assign_active_demand!, national_demand, assign_demand_freq_coeff!
+export assign_active_demand!, national_demand, assign_demand_freq_coeff!,
+    update_active_demand!
 
 function assign_active_demand!(
     scenario::Dict{String, DataFrame},
@@ -21,7 +22,7 @@ function assign_active_demand!(
 end
 
 
-function update_active_load!(
+function update_active_demand!(
     scenario::Dict{String, DataFrame},
     source_folder::String,
     date::String,

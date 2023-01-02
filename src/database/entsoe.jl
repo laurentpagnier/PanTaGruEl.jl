@@ -14,7 +14,7 @@ function retreave_entsoe_national_demand(
     source_folder::String,
     date::String = "2021-01-01 00:00:00",
 )
-    data = DataFrame(CSV.File("$source_folder/entsoe/2021_01_ActualTotalLoad_6.1.A.csv"))
+    data = DataFrame(CSV.File("$source_folder/entsoe/$(date[1:4])_$(date[6:7])_ActualTotalLoad_6.1.A.csv"))
 
     country = ["AL", "AT", "AZ", "BA", "BE", "BG", "BY", "CH", "CZ", "DE",
         "DK", "DZ", "EE", "EG", "ES", "FI", "FR", "GE", "GR", "HR", "HU",

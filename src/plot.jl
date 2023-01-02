@@ -7,21 +7,53 @@ function create_map(
     shape::Vector{Matrix{Float64}} = Matrix{Float64}[],
     sizes = (1000,800,30),
     node_radius = 3,
+    display::Symbol = :grid,
 )
+    
+    type2color = Dict(
+        "PS" => RGBA(0.00, 0.694, 0.627, 1.0), # ps
+        "RR" => RGBA(0.0, 0.733, 0.949, 1.0), # ror
+        "DA" => RGBA(0.0, 0.451, 0.753, 1.0), # hydro
+        "FM" => RGBA(1.00, 0.180, 0.090, 1.0), # fossil 2
+        "CG" => RGBA(0.675, 0.447, 0.725, 1.0), # gas
+        "FO" => RGBA(0.529, 0.161, 0.588, 1.0), # fossil
+        "HY" => RGBA(0.0, 0.733, 0.949, 1.0), # ror
+        "LI" => RGBA(0.467, 0.133, 0.024, 1.0), # lignite
+        "OT" => RGBA(0.173, 0.180, 0.208, 1.0), # other
+        "NU" => RGBA(1.0, 0.557, 0.153, 1.0), # nuclear
+        "HC" => RGBA(0.608, 0.612, 0.624, 1.0), # hard
+        "BM" => RGBA(0.533, 0.788, 0.275, 1.0), # biogas
+        "WA" => RGBA(0.365, 0.086, 0.004, 1.0), # waste
+        "XX" => RGBA(0.173, 0.180, 0.208, 1.0), # other
+        "GT" => RGBA(0.675, 0.447, 0.725, 1.0), # gas
+    )
+    
     coord = PanTaGruEl.mercator([scenario["bus"].longitude scenario["bus"].latitude])
     s = Matrix{Float64}[]
     for i=1:length(shape)
         push!(s, PanTaGruEl.mercator(shape[i]))
     end
-    e1 = scenario["line"].bus_id1 .|> b -> findfirst(scenario["bus"].id .== b) 
-    e2 = scenario["line"].bus_id2 .|> b -> findfirst(scenario["bus"].id .== b)
-    ec = repeat(["#000000"], size(scenario["line"], 1), 1)
-    ec[scenario["line"].voltage .== 132] .= "#000000"
-    ec[scenario["line"].voltage .== 220] .= "#00751a"
-    ec[scenario["line"].voltage .== 380] .= "#ff0000"
-    ew = copy(scenario["line"].circuit)
-    PanTaGruEl.svg_graph(filename, coord, [e1 e2],
-        shape = s, edge_color = ec, edge_width = ew, sizes = sizes, node_radius = [node_radius])
+    
+    if display == :grid
+        e1 = scenario["line"].bus_id1 .|> b -> findfirst(scenario["bus"].id .== b) 
+        e2 = scenario["line"].bus_id2 .|> b -> findfirst(scenario["bus"].id .== b)
+        ec = repeat(["#000000"], size(scenario["line"], 1), 1)
+        ec[scenario["line"].voltage .== 132] .= "#000000"
+        ec[scenario["line"].voltage .== 220] .= "#00751a"
+        ec[scenario["line"].voltage .== 380] .= "#ff0000"
+        ew = copy(scenario["line"].circuit)
+        
+        svg_graph(filename, coord, [e1 e2], shape = s, edge_color = ec, edge_width = ew,
+            sizes = sizes, node_radius = [node_radius])
+    elseif display == :gen
+        gen_c = scenario["gen"].type .|> t -> "#"*hex(type2color[t])[3:end]
+        gen_r = node_radius .* sqrt.(scenario["gen"].capacity ./ maximum(scenario["gen"].capacity))
+        gen_coord = scenario["gen"].bus_id .|> b -> coord[findfirst(scenario["bus"].id .== b),:]
+        svg_graph(filename, reduce(vcat, gen_coord'), Matrix{Int64}(zeros(0,2)),
+            shape = s, node_color = gen_c, sizes = sizes, node_radius = gen_r)
+    else
+        println("$display is not an available display")
+    end
 end
 
 
