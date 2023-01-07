@@ -1,7 +1,7 @@
 export assign_simple_type_to_gen!, assign_marginal_cost!, differentiate_gen_and_renew!,
     assign_ramping_rate!, remove_gen_duplicate!, remove_neg_gen!, large_gen_on_380!,
     set_gen_damping!, set_gen_inertia!, assign_inertia_constant!,
-    crosscheck_with_wri!
+    crosscheck_with_wri!, assign_quadratic_cost!
     
 
 
@@ -44,6 +44,19 @@ function assign_marginal_cost!(
     "XX" => 0.0, "PV" => 0., "SO" => 0., "GT" => 0.)
 )
     scenario["gen"].marginal_cost = scenario["gen"].type .|> t -> mc[t]  
+    nothing
+end
+
+
+function assign_quadratic_cost!(
+    scenario::Dict{String,DataFrame};
+    mci = Dict("BM" => 0.0, "DA" => 39.6, "FM" => 66.6, "FO" => 66.6,
+    "HC" => 77.7, "HY" => 60, "LI" => 55.5, "NU" => 11, "OT" => 66.6,
+    "PS" => 0.0, "RR" => 0.0, "WA" => 0.0, "CG" => 66.6, "WD" => 0,
+    "XX" => 0.0, "PV" => 0., "SO" => 0., "GT" => 0.)
+)
+    scenario["gen"].marginal_cost_increase = zip(scenario["gen"].type, scenario["gen"].capacity) .|>
+        v -> 2 * mci[v[1]] / v[2]
     nothing
 end
 
@@ -115,11 +128,12 @@ end
 function remove_neg_gen!(
     scenario::Dict{String, DataFrame};
     dryrun = false,
+    pmin = 0.0
 )
     if dryrun
         println(subset(scenario["gen"], :capacity => p -> p .<= 0))
     else
-        subset!(scenario["gen"], :capacity => p -> p .> 0)
+        subset!(scenario["gen"], :capacity => p -> p .> pmin)
     end
     nothing
 end
