@@ -3,16 +3,16 @@ export assign_active_demand!, national_demand, assign_demand_freq_coeff!,
 
 function assign_active_demand!(
     scenario::Dict{String, DataFrame},
-    national_demand = national_demand()
+    demand = national_demand()
 )
     active = zeros(size(scenario["bus"],1))
     reactive = zeros(size(scenario["bus"],1))
     
-    for c in keys(national_demand)
+    for c in keys(demand)
         findall(scenario["bus"].country .== c) |> id -> begin
             if !isempty(id) 
                 (id, scenario["bus"].population[id] ./ (sum(scenario["bus"].population[id]) + 1E-9) *
-                national_demand[c]) |> temp -> active[temp[1]] = temp[2]
+                demand[c]) |> temp -> active[temp[1]] = temp[2]
             end
         end
     end

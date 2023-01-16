@@ -174,6 +174,7 @@ function crosscheck_with_wri!(
     source_folder,
     scenario;
     dthres = 10,
+    dmax = 100,
     dryrun = false,
 )
     wri = load_wri_data(source_folder)
@@ -181,9 +182,9 @@ function crosscheck_with_wri!(
     gen = subset(wri, :country => c -> c .|> c -> c in country,
         :type => t -> t .|> t -> !(t in ["Solar", "Wind", "Storage"]))
     
-    coord_1 = [scenario["gen"].longitude scenario["gen"].latitude]
-    coord_b = [scenario["bus"].longitude scenario["bus"].latitude]
-    coord_2 = [gen.longitude  gen.latitude]
+    gen_coord = [scenario["gen"].longitude scenario["gen"].latitude]
+    bus_coord = [scenario["bus"].longitude scenario["bus"].latitude]
+    wri_coord = [gen.longitude  gen.latitude]
     row = Dict{String,Any}()
     for n in names(scenario["gen"])
         if typeof(scenario["gen"][:,n]) == Vector{Int64}
@@ -197,7 +198,7 @@ function crosscheck_with_wri!(
         end
     end
     for i=1:size(gen, 1)
-        _ , id = findmin(get_distance(coord_b, coord_2[[i],:]))
+        _ , id = findmin(get_distance(bus_coord, wri_coord[[i],:]))
         row["bus_id"] = scenario["bus"].id[id]
         row["name"] = gen.name[i]
         row["country"] = gen.country[i]
@@ -207,13 +208,16 @@ function crosscheck_with_wri!(
         row["latitude"] = gen.latitude[i]
         row["type"]= wri_type_to_simple[gen.type[i]][1]
         row["category"] = wri_type_to_simple[gen.type[i]][2]
-        if !isempty(coord_1)
-            dmin, id = findmin(get_distance(coord_1, coord_2[[i],:]))
-            if dmin > dthres
+        if !isempty(gen_coord)
+            dmin, id = findmin(get_distance(gen_coord, wri_coord[[i],:]))
+            if (dmin > dthres) && (dmin < dmax)
                 dryrun ? println(row) : append!(scenario["gen"], row)
             end
         else
-            dryrun ? println(row) : append!(scenario["gen"], row)
+            dmin, id = findmin(get_distance(bus_coord, wri_coord[[i],:]))
+            if dmin < dmax
+                dryrun ? println(row) : append!(scenario["gen"], row)
+            end
         end
     end
 end

@@ -28,3 +28,28 @@ function retreave_entsoe_national_demand(
             :AreaName => n -> contains.(n,c)).TotalLoadValue)
     return Dict(zip(country,demand) .|> d-> d[1] => d[2])
 end
+
+
+function retreave_zonal_demand(
+    source_folder::String,
+    zone::Vector{String} = ["IT-Sardinia"],
+    date::Vector{String} = ["2021-01-01 00:00:00"],
+)
+    file_tag = unique(date .|> d -> d[1:4] * "_" * d[6:7])
+
+    demand = Dict{String, Vector{Float64}}()
+    for z in zone
+        demand[z] = Float64[]
+    end
+    for ft in file_tag
+        data = DataFrame(CSV.File("$source_folder/entsoe/$(ft)_ActualTotalLoad_6.1.A.csv"))
+        temp = zone .|> z -> subset(data,
+                :DateTime => d -> d .|> d -> d in date .* ".000",
+                :AreaTypeCode => c -> c .== "BZN",
+                :AreaName => n -> contains.(n,z)).TotalLoadValue
+        for (i,z) in enumerate(zone)
+            append!(demand[z], temp[i])
+        end
+    end
+    return demand
+end
