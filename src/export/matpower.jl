@@ -75,9 +75,15 @@ function export_matpower(
     
     write(fid, "mpc.gencost = [\n")
     for i=1:size(scenario["gen"], 1)
+        quad = "marginal_cost_increase" in names(scenario["gen"]) ? true : false
         if !(scenario["gen"].type[i]  in ["WD", "XX", "SO", "PV"])
             m = scenario["gen"].marginal_cost[i]
-            write(fid, "\t2\t0\t0\t2\t$m\t0;\n")
+            if quad
+                q = scenario["gen"].marginal_cost_increase[i]
+                write(fid, "\t2\t0\t0\t3\t$q\t$m\t0;\n")
+            else
+                write(fid, "\t2\t0\t0\t2\t$m\t0;\n")
+            end
         end
     end
     write(fid, "];\n\n")
@@ -90,12 +96,12 @@ function export_matpower(
     end
     write(fid, "];\n\n")
     
-    write(fid, "mpc.bus_name = [\n")
+    write(fid, "mpc.bus_name = {\n")
     for i=1:size(scenario["bus"], 1)
         n = scenario["bus"].name[i]
-        write(fid, "\t\"$n\";\n")
+        write(fid, "\t\'$n\';\n")
     end
-    write(fid, "];\n\n")
+    write(fid, "};\n\n")
     
     if extended
         write(fid, "mpc.gen_type = [\n")

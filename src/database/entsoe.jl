@@ -42,9 +42,11 @@ function retreave_zonal_demand(
         demand[z] = Float64[]
     end
     for ft in file_tag
+        is_in = date .|> d -> d[1:4] * "_" * d[6:7] == ft
+        temp_date = date[is_in]
         data = DataFrame(CSV.File("$source_folder/entsoe/$(ft)_ActualTotalLoad_6.1.A.csv"))
         temp = zone .|> z -> subset(data,
-                :DateTime => d -> d .|> d -> d in date .* ".000",
+                :DateTime => d -> d .|> d -> d[1:end-4] in temp_date,
                 :AreaTypeCode => c -> c .== "BZN",
                 :AreaName => n -> contains.(n,z)).TotalLoadValue
         for (i,z) in enumerate(zone)
