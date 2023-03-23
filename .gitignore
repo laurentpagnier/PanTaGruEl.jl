@@ -11,3 +11,4 @@ numerics*
 *.m
 *.csv
 *.svg
+tmp/*

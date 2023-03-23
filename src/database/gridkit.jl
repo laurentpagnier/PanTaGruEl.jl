@@ -51,11 +51,7 @@ function load_gridkit_bus(source_folder::String)
             id2 = findfirst(id_q .> id)
             if id2 != nothing
                 global name = ""
-                try
-                    name = textline[id:id_q[id2]-1]
-                catch
-                    name = textline[id:id_q[id2]-2]
-                end
+                name = textline[id:prevind(textline, id_q[id2])]
                 if !contains(name, "unknown")
                     push!(name_tag, name)
                 else
@@ -86,10 +82,7 @@ function load_gridkit_bus(source_folder::String)
             id2 = findfirst(id_q .> id)
             if id2 != nothing
                 id2 = id_q[id2]
-                try push!(annotation, textline[id:id2-1])
-                catch
-                    push!(annotation, textline[id:id2-2])
-                end
+                push!(annotation, textline[id:prevind(textline, id2)])
             else
                 push!(annotation, "Null")
             end

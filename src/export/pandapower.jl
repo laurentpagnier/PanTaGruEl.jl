@@ -239,7 +239,36 @@ function export_pandapower(
         i < size(poly_field,1) ? write(fid, ",\n") : write(fid, "\n")
     end
     write(fid, "\t\t}\n")
-    write(fid, "\t}\n") # end of poly
+    write(fid, "\t},\n") # end of poly
+
+    geo_field = [("x", "float64"), ("y", "float64")]
+
+    write(fid, "\n\t\"bus_geodata\": {\n\t\t\"_module\": \"pandas.core.frame\",\n")
+    write(fid, "\t\t\"_class\": \"DataFrame\",\n\t\t\"_object\": \"{\\\"columns\\\":[")
+    for i=1:size(geo_field,1)
+        write(fid, "\\\"$(geo_field[i][1])\\\"")
+        i < size(geo_field,1) ? write(fid, ",") : nothing
+    end
+    write(fid, "],\\\"index\\\":[")
+    for i = 1:size(scenario["bus"], 1)
+        write(fid, "$(i-1)")
+        i < Nbus ? write(fid, ",") : nothing
+    end
+    write(fid, "],\\\"data\\\":[")
+    for i = 1:size(scenario["bus"], 1)
+        lo = Float64(scenario["bus"].longitude[i])
+        la = Float64(scenario["bus"].latitude[i])
+        write(fid, "[$lo, $la]")
+        i < Nbus ? write(fid, ",") : nothing
+    end
+    write(fid, "]}\",\n")
+    write(fid, "\t\t\"orient\": \"split\",\n\t\t\"dtype\": {\n")
+    for i=1:size(geo_field,1)
+        write(fid, "\t\t\"$(poly_field[i][1])\": \"$(poly_field[i][2])\"") 
+        i < size(geo_field,1) ? write(fid, ",\n") : write(fid, "\n")
+    end
+    write(fid, "\t\t}\n")
+    write(fid, "\t}\n") # end of geo
 
     write(fid, "}\n") # end of _object
 
