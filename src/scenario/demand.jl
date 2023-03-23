@@ -28,7 +28,7 @@ function update_active_demand!(
     source_folder::String,
     date::String,
     )
-    nd = retreave_entsoe_national_demand(source_folder, date)
+    nd = retrieve_entsoe_national_demand(source_folder, date)
     assign_active_demand!(scenario, nd)
     Nothing
 end

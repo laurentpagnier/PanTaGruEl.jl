@@ -10,7 +10,7 @@ function download_entsoe_data(source_folder)
 end
 
 
-function retreave_entsoe_national_demand(
+function retrieve_entsoe_national_demand(
     source_folder::String,
     date::String = "2021-01-01 00:00:00",
 )
@@ -30,7 +30,7 @@ function retreave_entsoe_national_demand(
 end
 
 
-function retreave_zonal_demand(
+function retrieve_zonal_demand(
     source_folder::String,
     zone::Vector{String} = ["IT-Sardinia"],
     date::Vector{String} = ["2021-01-01 00:00:00"],

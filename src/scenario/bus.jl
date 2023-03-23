@@ -1,7 +1,7 @@
-export retreave_country!, assign_bus_type!, distribute_population!
+export retrieve_country!, assign_bus_type!, distribute_population!
 
 
-function retreave_country!(
+function retrieve_country!(
     source_folder::String,
     scenario::Dict{String,DataFrame},
     scale=50

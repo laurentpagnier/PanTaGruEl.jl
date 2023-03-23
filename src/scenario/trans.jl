@@ -1,7 +1,7 @@
 export discard_non_trans!, get_trans_parameters!
 
 
-function retreave_voltage(bus, trans)
+function retrieve_voltage(bus, trans)
     # NOT WORKING
     v = findall(trans["voltage1"] .== 0) .|>
         id -> findfirst(bus["id"] .== trans["bus_id1"][id]) |>
