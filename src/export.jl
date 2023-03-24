@@ -1,9 +1,10 @@
 export export_matpower, export_csv, export_pandapower, export_pandapower,
-    export_oats
+    export_oats, export_powermodels
 
 include("export/matpower.jl")
 include("export/pandapower.jl")
 include("export/oats.jl")
+include("export/powermodels.jl")
 
 function get_matpower_type(t)
     if t == "PQ"

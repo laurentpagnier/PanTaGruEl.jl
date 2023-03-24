@@ -1,11 +1,13 @@
+export create_entsoe_list
+
 function download_entsoe_data(source_folder)
-    create_dir("$source_folder/enstoe")
+    create_dir("$source_folder/entsoe")
     println("""Downloading ENTSO-E data can't be easily be automated
         Please,
         1) create an account on at https://transparency.entsoe.eu
         2) sftp <email address you used>@sftp-transparency.entsoe.eu
         3) download /TP_export/ActualTotalLoad_6.1.A/yyyy_mm_ActualTotalLoad_6.1.A.csv
-        (where yyyy is the year and mm is the month) and place it in $source_folder/enstoe/
+        (where yyyy is the year and mm is the month) and place it in $source_folder/entsoe/
         """)
 end
 
@@ -54,4 +56,59 @@ function retrieve_zonal_demand(
         end
     end
     return demand
+end
+
+function create_entsoe_list(
+    source_folder::String,
+    output_folder::String,
+    file_name::String,
+    countries::Vector{String},
+)
+# Create a CSV file with load data for the specified countries from all entsoe
+# files in the directory $source_folder/entsoe
+files = readdir("$source_folder/entsoe")
+reg = r"\d{4}_\d{2}_ActualTotalLoad_6\.1\.A\.csv"
+matches = match.(reg, files)
+
+# Create export DataFrame
+df = DataFrame(zeros(0, length(countries)), countries)
+insertcols!(df, 1, "Date"=>Tuple)
+
+i = 0
+for m in matches
+    if m === nothing
+        continue
+    end
+    i += 1
+    println("Handling file $i")
+    # Create temporary dataframe holding current file
+    dftemp = DataFrame(CSV.File("$source_folder/entsoe/$(m.match)"))
+    subset!(dftemp, :AreaTypeCode => a -> a.=="CTY", :MapCode => a -> [i in countries for i in a])
+    dftemp.DateTime = Dates.DateTime.(
+        dftemp.DateTime, Dates.DateFormat("y-m-d H:M:S.s"))
+    transform!(dftemp, :DateTime => x -> tuple.(Dates.year.(x),
+            Dates.month.(x), Dates.day.(x), Dates.hour.(x)))
+    dftemp = dftemp[!, ["DateTime_function", "MapCode", "TotalLoadValue"]]
+    dftemp = combine(groupby(dftemp, ["MapCode", "DateTime_function"], sort=true),
+    :TotalLoadValue => mean)
+
+    # Enter everything in the global database
+    for row in eachrow(dftemp)
+        ix = findfirst(d -> d == row.DateTime_function, df.Date)
+        if ix === nothing
+            push!(df, Dict(:Date => row.DateTime_function, Symbol(row.MapCode) => row.TotalLoadValue_mean), cols=:subset)
+        else
+            df[ix, row.MapCode] = row.TotalLoadValue_mean
+        end
+    end
+    # Drop rows that are missing entries
+    dropmissing!(df)
+end
+
+# Put Date back to DateTime and sort
+map!(x->DateTime(x...), df.Date, df.Date)
+sort!(df, :Date)
+
+# Write to file
+CSV.write("$output_folder/$file_name.csv", df)
 end

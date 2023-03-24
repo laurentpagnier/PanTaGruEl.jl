@@ -8,6 +8,8 @@ using Plots
 using SparseArrays
 using Shapefile
 using XLSX
+using Statistics
+using JSON3
 
 include("database/bundesnetzagentur.jl")
 include("database/datagouvfr.jl")
