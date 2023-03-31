@@ -10,6 +10,11 @@ function export_powermodels(
 
     # Make a deepcopy of the scenario because of inplace sorting
     scenario_cp = deepcopy(scenario)
+    population = Dict{String, Float64}()
+    countries = unique(scenario["bus"].country)
+    for c in countries
+        population[c] = sum(scenario["bus"][scenario["bus"].country .== c, "population"]) + 1E-9
+    end
 
     exp["baseMVA"] = Sb
     if name != ""
@@ -33,6 +38,7 @@ function export_powermodels(
         exp["bus"][ix]["status"] = 1
         exp["bus"][ix]["coord"] = (row["longitude"], row["latitude"])
         exp["bus"][ix]["population"] = row["population"]
+        exp["bus"][ix]["load_prop"] = row["population"] / population[row["country"]]
         exp["bus"][ix]["vmin"] = vmin
         exp["bus"][ix]["vmax"] = vmax
         exp["bus"][ix]["vm"] = 1.
@@ -71,7 +77,7 @@ function export_powermodels(
             ix = string(id)
             exp["gen"][ix] = Dict{String, Any}()
             exp["gen"][ix]["gen_status"] = 1
-            exp["gen"][ix]["index"] = i
+            exp["gen"][ix]["index"] = id
             exp["gen"][ix]["pmin"] = 0.
             exp["gen"][ix]["pmax"] = row["capacity"] / Sb
             exp["gen"][ix]["qmin"] = -0.5 * row["capacity"] / Sb

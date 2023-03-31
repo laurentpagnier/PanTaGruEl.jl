@@ -60,27 +60,26 @@ end
 
 function create_entsoe_list(
     source_folder::String,
-    output_folder::String,
-    file_name::String,
     countries::Vector{String},
 )
-# Create a CSV file with load data for the specified countries from all entsoe
+# Create a dataframe with load data for the specified countries from all entsoe
 # files in the directory $source_folder/entsoe
 files = readdir("$source_folder/entsoe")
 reg = r"\d{4}_\d{2}_ActualTotalLoad_6\.1\.A\.csv"
+reg2 = r"\d{4}_\d{2}_DayAheadTotalLoadForecast_6\.1\.B\.csv"
 matches = match.(reg, files)
+matches2 = match.(reg2, files)
 
 # Create export DataFrame
 df = DataFrame(zeros(0, length(countries)), countries)
-insertcols!(df, 1, "Date"=>Tuple)
+insertcols!(df, 1, "Date"=>zeros(0))
+df2 = DataFrame(zeros(0, length(countries)), countries)
+insertcols!(df2, 1, "Date"=>zeros(0))
 
-i = 0
 for m in matches
     if m === nothing
         continue
     end
-    i += 1
-    println("Handling file $i")
     # Create temporary dataframe holding current file
     dftemp = DataFrame(CSV.File("$source_folder/entsoe/$(m.match)"))
     subset!(dftemp, :AreaTypeCode => a -> a.=="CTY", :MapCode => a -> [i in countries for i in a])
@@ -92,23 +91,67 @@ for m in matches
     dftemp = combine(groupby(dftemp, ["MapCode", "DateTime_function"], sort=true),
     :TotalLoadValue => mean)
 
-    # Enter everything in the global database
+    # Reformat the database to fit the global one
+    dftemp2 = DataFrame(zeros(0, length(countries)), countries)
+    insertcols!(dftemp2, 1, "Date"=>zeros(0))
     for row in eachrow(dftemp)
-        ix = findfirst(d -> d == row.DateTime_function, df.Date)
-        if ix === nothing
-            push!(df, Dict(:Date => row.DateTime_function, Symbol(row.MapCode) => row.TotalLoadValue_mean), cols=:subset)
-        else
-            df[ix, row.MapCode] = row.TotalLoadValue_mean
-        end
+        push!(dftemp2, Dict(:Date => row.DateTime_function, Symbol(row.MapCode) => row.TotalLoadValue_mean), cols=:subset)
     end
-    # Drop rows that are missing entries
-    dropmissing!(df)
+    # Set missing entries to zero and combine entries for the same date
+    for i in names(dftemp2)
+        dftemp2[ismissing.(dftemp2[!, i]), i] .= 0
+    end
+    dftemp2 = combine(groupby(dftemp2, :Date), (c=>sum=>c for c in countries)...)
+    # Finally add to the global dataframe
+    df = vcat(df, dftemp2)
+end
+for m in matches2
+    if m === nothing
+        continue
+    end
+    # Create temporary dataframe holding current file
+    dftemp = DataFrame(CSV.File("$source_folder/entsoe/$(m.match)"))
+    subset!(dftemp, :AreaTypeCode => a -> a.=="CTY", :MapCode => a -> [i in countries for i in a])
+    dftemp.DateTime = Dates.DateTime.(
+        dftemp.DateTime, Dates.DateFormat("y-m-d H:M:S.s"))
+    transform!(dftemp, :DateTime => x -> tuple.(Dates.year.(x),
+            Dates.month.(x), Dates.day.(x), Dates.hour.(x)))
+    dftemp = dftemp[!, ["DateTime_function", "MapCode", "TotalLoadValue"]]
+    dftemp = combine(groupby(dftemp, ["MapCode", "DateTime_function"], sort=true),
+    :TotalLoadValue => mean)
+
+   
+    # Reformat the database to fit the global one
+    dftemp2 = DataFrame(zeros(0, length(countries)), countries)
+    insertcols!(dftemp2, 1, "Date"=>zeros(0))
+    for row in eachrow(dftemp)
+        push!(dftemp2, Dict(:Date => row.DateTime_function, Symbol(row.MapCode) => row.TotalLoadValue_mean), cols=:subset)
+    end
+    # Set missing entries to zero and combine entries for the same date
+    for i in names(dftemp2)
+        dftemp2[ismissing.(dftemp2[!, i]), i] .= 0
+    end
+    dftemp2 = combine(groupby(dftemp2, :Date), (c=>sum=>c for c in countries)...)
+    # Finally add to the global dataframe
+    df2 = vcat(df2, dftemp2)
+end
+fullix = df.Date
+tmp = DataFrame("Date"=>fullix)
+leftjoin!(tmp, df2, on=:Date)
+tmp = coalesce.(tmp, 0)
+sort!(tmp, :Date)
+sort!(df, :Date)
+# Try to fill zero elements with prediction data
+for i in names(df)
+    if i == "Date"
+        continue
+    end
+    ix = iszero.(df[!, i])
+    df[ix, i] = tmp[ix, i]
 end
 
-# Put Date back to DateTime and sort
+# Put Date back to DateTime
 map!(x->DateTime(x...), df.Date, df.Date)
-sort!(df, :Date)
 
-# Write to file
-CSV.write("$output_folder/$file_name.csv", df)
+return df
 end
